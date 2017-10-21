@@ -20,7 +20,6 @@ const CLASS_COUNT = 3;
 
 const MEASURE_TIMING_EVERY_NUM_FRAMES = 20;
 
-
 function passThrough() {
   return 0;
 }
@@ -62,8 +61,9 @@ class WebcamClassifier {
     this.isDown = false;
     this.current = null;
 
-    this.useFloatTextures = !GLOBALS.browserUtils.isMobile && !GLOBALS.browserUtils.isSafari;
-    
+    this.useFloatTextures =
+      !GLOBALS.browserUtils.isMobile && !GLOBALS.browserUtils.isSafari;
+
     const features = {};
     features.WEBGL_FLOAT_TEXTURE_ENABLED = this.useFloatTextures;
     const env = new Environment(features);
@@ -87,7 +87,9 @@ class WebcamClassifier {
       this.classExampleCount.push(0);
     }
 
-    this.activateWebcamButton = document.getElementById('input__media__activate');
+    this.activateWebcamButton = document.getElementById(
+      'input__media__activate'
+    );
     if (this.activateWebcamButton) {
       this.activateWebcamButton.addEventListener('click', () => {
         location.reload();
@@ -111,70 +113,73 @@ class WebcamClassifier {
   ready() {
     if (this.loaded) {
       this.startTimer();
-    }else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      navigator.mediaDevices.getUserMedia(
-      {
-        video: true,
-        audio: (GLOBALS.browserUtils.isChrome && !GLOBALS.browserUtils.isMobile)
-      }).
-      then((stream) => {
-        GLOBALS.isCamGranted = true;
-        if ((GLOBALS.browserUtils.isChrome && !GLOBALS.browserUtils.isMobile)) {
-          GLOBALS.audioContext.createMediaStreamSource(stream);
-          GLOBALS.stream = stream;
-        }
-        this.activateWebcamButton.style.display = 'none';
-        this.active = true;
-        this.stream = stream;
-        this.video.addEventListener('loadedmetadata', this.videoLoaded.bind(this));
-        this.video.srcObject = stream;
-        this.squeezeNet = new SqueezeNet(this.gpgpu, this.math, this.useFloatTextures);
-        this.squeezeNet.loadVariables().then(() => {
-          this.math.scope(() => {
-            const warmupInput = Array3D.zeros(
-              [
-              IMAGE_SIZE,
-              IMAGE_SIZE,
-              3
-              ]
-            );
-            // Warmup
-            const inferenceResult = this.squeezeNet.infer(warmupInput);
-      
-            for (const key in inferenceResult.namedActivations) {
-              if (key in inferenceResult.namedActivations) {
-                this.math.track(inferenceResult.namedActivations[key]);
+    } else if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices
+        .getUserMedia({
+          video: true,
+          audio: GLOBALS.browserUtils.isChrome && !GLOBALS.browserUtils.isMobile
+        })
+        .then(stream => {
+          GLOBALS.isCamGranted = true;
+          if (GLOBALS.browserUtils.isChrome && !GLOBALS.browserUtils.isMobile) {
+            GLOBALS.audioContext.createMediaStreamSource(stream);
+            GLOBALS.stream = stream;
+          }
+          this.activateWebcamButton.style.display = 'none';
+          this.active = true;
+          this.stream = stream;
+          this.video.addEventListener(
+            'loadedmetadata',
+            this.videoLoaded.bind(this)
+          );
+          this.video.srcObject = stream;
+          this.squeezeNet = new SqueezeNet(
+            this.gpgpu,
+            this.math,
+            this.useFloatTextures
+          );
+          this.squeezeNet.loadVariables().then(() => {
+            this.math.scope(() => {
+              const warmupInput = Array3D.zeros([IMAGE_SIZE, IMAGE_SIZE, 3]);
+              // Warmup
+              const inferenceResult = this.squeezeNet.infer(warmupInput);
+
+              for (const key in inferenceResult.namedActivations) {
+                if (key in inferenceResult.namedActivations) {
+                  this.math.track(inferenceResult.namedActivations[key]);
+                }
               }
-            }
-            this.math.track(inferenceResult.logits);
+              this.math.track(inferenceResult.logits);
+            });
+
+            this.loaded = true;
+            this.wasActive = true;
+            this.startTimer();
           });
 
-          this.loaded = true;
-          this.wasActive = true;
-          this.startTimer();
+          let event = new CustomEvent('webcam-status', {
+            detail: { granted: true }
+          });
+          window.dispatchEvent(event);
+          gtag('event', 'webcam_granted');
+        })
+        .catch(error => {
+          let event = new CustomEvent('webcam-status', {
+            detail: {
+              granted: false,
+              error: error
+            }
+          });
+          this.activateWebcamButton.style.display = 'block';
+          window.dispatchEvent(event);
+          gtag('event', 'webcam_denied');
         });
-
-        let event = new CustomEvent('webcam-status', {detail: {granted: true}});
-        window.dispatchEvent(event);
-        gtag('event', 'webcam_granted');        
-      }).
-      catch((error) => {
-        let event = new CustomEvent('webcam-status', {
-          detail: {
-            granted: false,
-            error: error
-          }
-        });
-        this.activateWebcamButton.style.display = 'block';
-        window.dispatchEvent(event);
-        gtag('event', 'webcam_denied');
-      });
     }
   }
 
   videoLoaded() {
     let videoRatio = this.video.videoWidth / this.video.videoHeight;
-    let parent = this.video.parentNode; 
+    let parent = this.video.parentNode;
     let parentWidth = parent.offsetWidth;
     let parentHeight = parent.offsetHeight;
     let videoWidth = parentHeight * videoRatio;
@@ -208,18 +213,25 @@ class WebcamClassifier {
 
     const logits = this.captureFrameSqueezeNetLogits();
     if (this.trainClassLogitsMatrices[this.current.index] === null) {
-      this.trainClassLogitsMatrices[this.current.index] =
-      this.math.keep(logits.as3D(1, INPUT_SIZE, 1));
-    }else {
+      this.trainClassLogitsMatrices[this.current.index] = this.math.keep(
+        logits.as3D(1, INPUT_SIZE, 1)
+      );
+    } else {
       const axis = 0;
       const newTrainLogitsMatrix = this.math.concat3D(
         this.trainClassLogitsMatrices[this.current.index].as3D(
-          this.classExampleCount[this.current.index], INPUT_SIZE, 1),
-        logits.as3D(1, INPUT_SIZE, 1), axis);
+          this.classExampleCount[this.current.index],
+          INPUT_SIZE,
+          1
+        ),
+        logits.as3D(1, INPUT_SIZE, 1),
+        axis
+      );
 
       this.trainClassLogitsMatrices[this.current.index].dispose();
-      this.trainClassLogitsMatrices[this.current.index] =
-      this.math.keep(newTrainLogitsMatrix);
+      this.trainClassLogitsMatrices[this.current.index] = this.math.keep(
+        newTrainLogitsMatrix
+      );
     }
     this.classExampleCount[this.current.index] += 1;
   }
@@ -254,7 +266,6 @@ class WebcamClassifier {
   buttonUp(id) {
     this.images[id].down = false;
     this.isDown = false;
-
 
     this.current = null;
     this.currentContext = null;
@@ -294,36 +305,53 @@ class WebcamClassifier {
       }
 
       this.thumbContext.drawImage(
-        this.video, this.thumbVideoX, 0, this.thumbVideoWidthReal,
-        this.thumbVideoHeight);
+        this.video,
+        this.thumbVideoX,
+        0,
+        this.thumbVideoWidthReal,
+        this.thumbVideoHeight
+      );
       let data = this.thumbContext.getImageData(
-        0, 0, this.canvasWidth, this.canvasHeight);
+        0,
+        0,
+        this.canvasWidth,
+        this.canvasHeight
+      );
       this.current.latestThumbs.push(data);
 
       let cols = 0;
       let rows = 0;
 
-      for (let index = 0; index < this.current.latestThumbs.length; index += 1) {
+      for (
+        let index = 0;
+        index < this.current.latestThumbs.length;
+        index += 1
+      ) {
         this.currentContext.putImageData(
-          this.current.latestThumbs[index], (2 - cols) * this.thumbCanvas.width,
-          rows * this.thumbVideoHeight, 0, 0, this.thumbCanvas.width,
-          this.thumbCanvas.height);
+          this.current.latestThumbs[index],
+          (2 - cols) * this.thumbCanvas.width,
+          rows * this.thumbVideoHeight,
+          0,
+          0,
+          this.thumbCanvas.width,
+          this.thumbCanvas.height
+        );
         if (cols === 2) {
           rows += 1;
           cols = 0;
-        }else {
+        } else {
           cols += 1;
         }
       }
       this.timer = requestAnimationFrame(this.animate.bind(this));
-    }else if (this.getNumExamples() > 0) {
+    } else if (this.getNumExamples() > 0) {
       const numExamples = this.getNumExamples();
 
       let measureTimer = false;
       let start = performance.now();
       measureTimer = this.measureTimingCounter === 0;
 
-      const knn = this.math.scope((keep) => {
+      const knn = this.math.scope(keep => {
         const frameLogits = this.captureFrameSqueezeNetLogits();
 
         if (this.trainLogitsMatrix === null) {
@@ -331,15 +359,20 @@ class WebcamClassifier {
 
           for (let index = 0; index < CLASS_COUNT; index += 1) {
             newTrainLogitsMatrix = this.concat(
-              newTrainLogitsMatrix, this.trainClassLogitsMatrices[index]);
+              newTrainLogitsMatrix,
+              this.trainClassLogitsMatrices[index]
+            );
           }
 
           this.trainLogitsMatrix = keep(this.math.clone(newTrainLogitsMatrix));
         }
 
-        return this.math.matMul(
-          this.trainLogitsMatrix.as2D(numExamples, 1000),
-          frameLogits.as2D(1000, 1)).as1D();
+        return this.math
+          .matMul(
+            this.trainLogitsMatrix.as2D(numExamples, 1000),
+            frameLogits.as2D(1000, 1)
+          )
+          .as1D();
       });
 
       const computeConfidences = () => {
@@ -350,12 +383,7 @@ class WebcamClassifier {
 
         const indices = topK.indices.getValues();
 
-        const classTopKMap =
-        [
-        0,
-        0,
-        0
-        ];
+        const classTopKMap = [0, 0, 0];
         for (let index = 0; index < indices.length; index += 1) {
           classTopKMap[this.getClassFromIndex(indices[index])] += 1;
         }
@@ -368,21 +396,25 @@ class WebcamClassifier {
 
         GLOBALS.learningSection.setConfidences(confidences);
 
-        this.measureTimingCounter = (this.measureTimingCounter + 1) % MEASURE_TIMING_EVERY_NUM_FRAMES;
+        this.measureTimingCounter =
+          (this.measureTimingCounter + 1) % MEASURE_TIMING_EVERY_NUM_FRAMES;
 
         this.timer = requestAnimationFrame(this.animate.bind(this));
       };
 
-      if (!GLOBALS.browserUtils.isSafari || measureTimer || !GLOBALS.browserUtils.isMobile) {
+      if (
+        !GLOBALS.browserUtils.isSafari ||
+        measureTimer ||
+        !GLOBALS.browserUtils.isMobile
+      ) {
         knn.getValuesAsync().then(() => {
           this.lastFrameTimeMs = performance.now() - start;
           computeConfidences();
         });
-      }else {
+      } else {
         setTimeout(computeConfidences, this.lastFrameTimeMs);
       }
-
-    }else {
+    } else {
       this.timer = requestAnimationFrame(this.animate.bind(this));
     }
   }
@@ -402,37 +434,32 @@ class WebcamClassifier {
   concat(ndarray1, ndarray2) {
     if (ndarray1 === null) {
       return ndarray2;
-    }else if (ndarray2 === null) {
+    } else if (ndarray2 === null) {
       return ndarray1;
     }
     const axis = 0;
 
     return this.math.concat3D(
       ndarray1.as3D(ndarray1.shape[0], INPUT_SIZE, 1),
-      ndarray2.as3D(ndarray2.shape[0], INPUT_SIZE, 1), axis);
+      ndarray2.as3D(ndarray2.shape[0], INPUT_SIZE, 1),
+      axis
+    );
   }
 
   captureFrameSqueezeNetLogits() {
-    const canvasTexture =
-    this.math.getTextureManager().acquireTexture(
-      [
-      IMAGE_SIZE,
-      IMAGE_SIZE
-      ]);
+    const canvasTexture = this.math
+      .getTextureManager()
+      .acquireTexture([IMAGE_SIZE, IMAGE_SIZE]);
     this.gpgpu.uploadPixelDataToTexture(canvasTexture, this.video);
-    const preprocessedInput =
-    this.math.track(this.squeezeNet.preprocessColorTextureToArray3D(
-      canvasTexture, 
-      [
-      IMAGE_SIZE,
-      IMAGE_SIZE
-      ]));
-    this.math.getTextureManager().releaseTexture(
-      canvasTexture, 
-      [
-      IMAGE_SIZE,
-      IMAGE_SIZE
-      ]);
+    const preprocessedInput = this.math.track(
+      this.squeezeNet.preprocessColorTextureToArray3D(canvasTexture, [
+        IMAGE_SIZE,
+        IMAGE_SIZE
+      ])
+    );
+    this.math
+      .getTextureManager()
+      .releaseTexture(canvasTexture, [IMAGE_SIZE, IMAGE_SIZE]);
 
     // Infer through squeezenet.
     const inferenceResult = this.squeezeNet.infer(preprocessedInput);
@@ -444,7 +471,9 @@ class WebcamClassifier {
     }
 
     const squashedLogits = this.math.divide(
-      inferenceResult.logits, this.squashLogitsDenominator);
+      inferenceResult.logits,
+      this.squashLogitsDenominator
+    );
 
     // Normalize to unit length
     const squared = this.math.multiplyStrict(squashedLogits, squashedLogits);
@@ -455,7 +484,21 @@ class WebcamClassifier {
   }
 }
 
-import {GPGPUContext, NDArrayMathCPU, NDArrayMathGPU, Array1D, Array2D, Array3D, NDArray, gpgpu_util, util, Scalar, Environment, environment, ENV}from 'deeplearn';
+import {
+  GPGPUContext,
+  NDArrayMathCPU,
+  NDArrayMathGPU,
+  Array1D,
+  Array2D,
+  Array3D,
+  NDArray,
+  gpgpu_util,
+  util,
+  Scalar,
+  Environment,
+  environment,
+  ENV
+} from 'deeplearn';
 
 import GLOBALS from './../config.js';
 import SqueezeNet from './squeezenet';

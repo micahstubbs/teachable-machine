@@ -15,9 +15,7 @@
         "array-bracket-newline": "error",
         "array-bracket-spacing": "error",
         "array-callback-return": "error",
-        "array-element-newline": "error",
         "arrow-body-style": "error",
-        "arrow-parens": "error",
         "arrow-spacing": "error",
         "block-scoped-var": "error",
         "block-spacing": "error",
@@ -50,12 +48,8 @@
         "consistent-this": "error",
         "curly": "error",
         "default-case": "error",
-        "dot-location": "error",
         "dot-notation": "error",
-        "eol-last": [
-            "error",
-            "never"
-        ],
+        "eol-last": "off",
         "eqeqeq": "error",
         "for-direction": "error",
         "func-call-spacing": "error",
@@ -86,13 +80,6 @@
         "init-declarations": "error",
         "jsx-quotes": "error",
         "key-spacing": "error",
-        "keyword-spacing": [
-            "error",
-            {
-                "after": true,
-                "before": false
-            }
-        ],
         "line-comment-position": "error",
         "linebreak-style": [
             "error",
@@ -208,8 +195,6 @@
         "no-whitespace-before-property": "error",
         "no-with": "error",
         "nonblock-statement-body-position": "error",
-        "object-curly-newline": "error",
-        "object-curly-spacing": "error",
         "object-property-newline": "error",
         "object-shorthand": "off",
         "one-var": "off",
