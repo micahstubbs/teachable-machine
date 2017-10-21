@@ -48,7 +48,8 @@
     "ncp": "^2.0.0",
     "nib": "^1.1.2",
     "openssl": "^1.1.0",
-    "stylus": "^0.54.5"
+    "stylus": "^0.54.5",
+    "yarn": "^1.2.1"
   },
   "devDependencies": {
     "eslint": "^4.3.0",
