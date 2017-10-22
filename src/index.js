@@ -27,23 +27,30 @@ import LaunchScreen from './ui/modules/wizard/LaunchScreen.js';
 import BrowserUtils from './ui/components/BrowserUtils';
 
 function init() {
+  // Shim for forEach for IE/Edge
+  if (typeof NodeList.prototype.forEach !== 'function') {
+    NodeList.prototype.forEach = Array.prototype.forEach;
+  }
+  GLOBALS.browserUtils = new BrowserUtils();
+  GLOBALS.launchScreen = new LaunchScreen();
 
-	// Shim for forEach for IE/Edge
-    if (typeof NodeList.prototype.forEach !== 'function') {
-        NodeList.prototype.forEach = Array.prototype.forEach;
-	}
-    GLOBALS.browserUtils = new BrowserUtils();
-    GLOBALS.launchScreen = new LaunchScreen();
+  GLOBALS.learningSection = new LearningSection(
+    document.querySelector('#learning-section')
+  );
+  GLOBALS.inputSection = new InputSection(
+    document.querySelector('#input-section')
+  );
+  GLOBALS.outputSection = new OutputSection(
+    document.querySelector('#output-section')
+  );
+  GLOBALS.recordOpener = new RecordOpener(
+    document.querySelector('#record-open-section')
+  );
 
-    GLOBALS.learningSection = new LearningSection(document.querySelector('#learning-section'));
-	GLOBALS.inputSection = new InputSection(document.querySelector('#input-section'));
-	GLOBALS.outputSection = new OutputSection(document.querySelector('#output-section'));
-    GLOBALS.recordOpener = new RecordOpener(document.querySelector('#record-open-section'));
-
-	GLOBALS.inputSection.ready();
-	GLOBALS.learningSection.ready();
-	GLOBALS.wizard = new Wizard();
-	GLOBALS.recordSection = new Recording(document.querySelector('#recording'));
+  GLOBALS.inputSection.ready();
+  GLOBALS.learningSection.ready();
+  GLOBALS.wizard = new Wizard();
+  GLOBALS.recordSection = new Recording(document.querySelector('#recording'));
 }
 
 window.addEventListener('load', init);

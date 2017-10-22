@@ -357,6 +357,22 @@
 	@extend .output_selector__option--selected	
 }
 
+.output_selector__link {
+	// display: inline-block
+	flex: 1 1 1
+	cursor: pointer
+	margin: 0
+}
+
+.output_selector__link--selected {
+	color: $color__blue--primary
+	text-decoration: underline
+}
+
+.output_selector__link:hover {
+	@extend .output_selector__link--selected	
+}
+
 // .output__selector-title-wrapper {
 // 	position: absolute
 // 	width: 100%

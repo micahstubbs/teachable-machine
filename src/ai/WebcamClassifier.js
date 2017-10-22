@@ -60,7 +60,7 @@ class WebcamClassifier {
         latestImages: [],
         latestThumbs: []
       };
-      if (typeof this.trainingData[index] !== 'undefined') {
+      if (typeof this.trainingData[index] === 'undefined') {
         this.trainingData[index] = [];
       }
     }
@@ -234,11 +234,15 @@ class WebcamClassifier {
     }
 
     let logits = this.captureFrameSqueezeNetLogits();
+    const logitsData = this.getNDArrayData(logits);
+    this.trainingData[this.current.index].push(logitsData);
+    window.trainingData = this.trainingData;
+
     console.log('logits.get(0)', logits.get(0));
     console.log('logits.size', logits.size);
-    const logitsData = this.getNDArrayData(logits);
     console.log('logitsData', logitsData);
     console.log('this.current.index', this.current.index);
+
     // reconstruct the logits ndarray from the serialized
     // underlying data
     // do this to see if we can later import weights

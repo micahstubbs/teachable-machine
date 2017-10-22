@@ -29,10 +29,15 @@ class OutputSection {
         this.loadedOutputs = [];
 
         let outputLinks = element.querySelectorAll('.output_selector__option');
-        outputLinks.forEach((link) => {
+        outputLinks.forEach(link => {
             link.addEventListener('click', this.changeOutput.bind(this));
         });
-        this.currentLink = element.querySelector('.output_selector__option--selected');
+        this.currentLink = element.querySelector(
+            '.output_selector__option--selected'
+        );
+
+        const downloadLinkElement = document.querySelector('#DownloadTrainingData');
+        downloadLinkElement.addEventListener('click', this.downloadOnClick.bind(this));
 
         this.outputContainer = document.querySelector('#output-player');
         this.currentOutput = null;
@@ -49,13 +54,24 @@ class OutputSection {
         this.element.appendChild(this.arrow.element);
     }
 
+    downloadOnClick() {
+        console.log('training data', window.trainingData);
+        const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
+            JSON.stringify(window.trainingData)
+        )}`;
+        const downloadAnchorElement = document.getElementById('downloadAnchorElem');
+        downloadAnchorElement.setAttribute('href', dataStr);
+        downloadAnchorElement.setAttribute('download', 'training-data.json');
+        downloadAnchorElement.click();
+    }
+
     enable() {
         this.element.classList.remove('section--disabled');
     }
 
     highlight() {
         this.arrow.show();
-        TweenMax.from(this.arrow.element, 0.3, {opacity: 0});
+        TweenMax.from(this.arrow.element, 0.3, { opacity: 0 });
     }
 
     dehighlight() {
@@ -77,7 +93,9 @@ class OutputSection {
 
     changeOutput(event) {
         if (this.currentLink) {
-            this.currentLink.classList.remove('output_selector__option--selected');
+            this.currentLink.classList.remove(
+                'output_selector__option--selected'
+            );
         }
 
         this.currentLink = event.target;
@@ -93,13 +111,12 @@ class OutputSection {
             this.currentOutput = this.outputs[outputId];
         }
 
-
         if (this.currentOutput) {
             this.outputContainer.appendChild(this.currentOutput.element);
             this.currentOutput.start();
         }
 
-        gtag('event', 'select_output', {'id': outputId});
+        gtag('event', 'select_output', { id: outputId });
     }
 
     startWizardMode() {
@@ -115,7 +132,9 @@ class OutputSection {
         this.currentOutput.trigger(index);
 
         if (this.broadcastEvents) {
-            let event = new CustomEvent('class-triggered', {detail: {id: id}});
+            let event = new CustomEvent('class-triggered', {
+                detail: { id: id }
+            });
             window.dispatchEvent(event);
         }
     }
