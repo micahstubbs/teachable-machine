@@ -81,6 +81,8 @@ class OutputSection {
       var result = JSON.parse(e.target.result);
       console.log('json uploaded', result);
       window.importedTrainingData = result;
+      const event = new CustomEvent('trainingdataimported', { detail: result });
+      window.dispatchEvent(event);
     };
 
     fr.readAsText(files.item(0));
