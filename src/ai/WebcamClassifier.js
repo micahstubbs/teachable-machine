@@ -106,6 +106,12 @@ class WebcamClassifier {
       'trainingdataimported',
       event => {
         console.log('trainingdataimported event received', event.detail);
+        const importedTrainingData = event.detail;
+        Object.keys(importedTrainingData).forEach(classIndex => {
+          importedTrainingData[classIndex].forEach(d => {
+            this.importTrainingLogits(d, classIndex);
+          });
+        });
       },
       false
     );
@@ -233,6 +239,55 @@ class WebcamClassifier {
     for (let i = 0; i < ndarray.size; i += 1) {
       ndarray.set(input1DArray[i]);
     }
+  }
+
+  importTrainingLogits(logitsData, currentIndex) {
+    if (this.trainLogitsMatrix !== null) {
+      this.trainLogitsMatrix.dispose();
+      this.trainLogitsMatrix = null;
+    }
+
+    // get a logit ndarray object that we can
+    // stuff our imported data into
+    // probably a better way to do this :sweat-smile:
+    let logits = this.captureFrameSqueezeNetLogits();
+
+    this.trainingData[currentIndex].push(logitsData);
+    window.trainingData = this.trainingData;
+
+    console.log('logits.get(0)', logits.get(0));
+    console.log('logits.size', logits.size);
+    console.log('logitsData', logitsData);
+    console.log('currentIndex', currentIndex);
+
+    // reconstruct the logits ndarray
+    // from the serialized underlying data
+    // import weights that we exported earlier
+    this.setNDArrayData(logitsData, logits);
+
+    if (this.trainClassLogitsMatrices[currentIndex] === null) {
+      this.trainClassLogitsMatrices[currentIndex] = this.math.keep(
+        logits.as3D(1, INPUT_SIZE, 1)
+      );
+    } else {
+      const axis = 0;
+      const newTrainLogitsMatrix = this.math.concat3D(
+        this.trainClassLogitsMatrices[currentIndex].as3D(
+          this.classExampleCount[currentIndex],
+          INPUT_SIZE,
+          1
+        ),
+        logits.as3D(1, INPUT_SIZE, 1),
+        axis
+      );
+
+      this.trainClassLogitsMatrices[currentIndex].dispose();
+      this.trainClassLogitsMatrices[currentIndex] = this.math.keep(
+        newTrainLogitsMatrix
+      );
+    }
+    this.classExampleCount[currentIndex] += 1;
+    // console.log('this.trainClassLogitsMatrices', this.trainClassLogitsMatrices);
   }
 
   saveTrainingLogits() {
