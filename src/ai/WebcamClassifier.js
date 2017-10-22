@@ -102,9 +102,13 @@ class WebcamClassifier {
       });
     }
 
-    window.addEventListener('trainingdataimported', event => {
-      console.log('trainingdataimported event received', event.detail);
-    }, false)
+    window.addEventListener(
+      'trainingdataimported',
+      event => {
+        console.log('trainingdataimported event received', event.detail);
+      },
+      false
+    );
   }
 
   deleteClassData(index) {
