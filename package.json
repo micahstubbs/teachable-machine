@@ -25,6 +25,7 @@
     "style-watch": "stylus -m -w -u nib style/main.styl -o public/style.css",
     "style-build": "stylus -c -u nib style/main.styl -o public/style.css",
     "eslint": "eslint src",
+    "lint": "eslint src",
     "stylint": "stylint style",
     "budo": "budo src/index.js:bundle.js --port=3000 --live -v --dir=public -o",
     "budo-https": "budo src/index.js:bundle.js --ssl --cert=server.cer --key=server.key --port=3000 --live -v --dir=public -o",
@@ -47,6 +48,7 @@
     "gifler": "git://github.com/themadcreator/gifler.git#0.3.0",
     "gsap": "^1.20.2",
     "ncp": "^2.0.0",
+    "ndarray": "^1.0.18",
     "nib": "^1.1.2",
     "openssl": "^1.1.0",
     "stylus": "^0.54.5"

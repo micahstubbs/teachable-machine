@@ -13,6 +13,7 @@
 // limitations under the License.
 
 /* eslint-disable camelcase, max-lines */
+import ndarray from 'ndarray';
 const IMAGE_SIZE = 227;
 const INPUT_SIZE = 1000;
 const TOPK = 10;
@@ -48,6 +49,8 @@ class WebcamClassifier {
     this.thumbVideoX = 0;
     this.classNames = GLOBALS.classNames;
     this.images = {};
+    this.trainingData = {};
+
     for (let index = 0; index < this.classNames.length; index += 1) {
       this.images[this.classNames[index]] = {
         index: index,
@@ -57,6 +60,9 @@ class WebcamClassifier {
         latestImages: [],
         latestThumbs: []
       };
+      if (typeof this.trainingData[index] !== 'undefined') {
+        this.trainingData[index] = [];
+      }
     }
     this.isDown = false;
     this.current = null;
@@ -205,13 +211,40 @@ class WebcamClassifier {
     }
   }
 
+  getNDArrayData(ndarray) {
+    const underlying1DStorageArray = [];
+    for (let i = 0; i < ndarray.size; i += 1) {
+      underlying1DStorageArray.push(ndarray.get(i));
+    }
+    return underlying1DStorageArray;
+  }
+
+  // mutates ndarray
+  // sets data to values in input1DArray
+  setNDArrayData(input1DArray, ndarray) {
+    for (let i = 0; i < ndarray.size; i += 1) {
+      ndarray.set(input1DArray[i]);
+    }
+  }
+
   saveTrainingLogits() {
     if (this.trainLogitsMatrix !== null) {
       this.trainLogitsMatrix.dispose();
       this.trainLogitsMatrix = null;
     }
 
-    const logits = this.captureFrameSqueezeNetLogits();
+    let logits = this.captureFrameSqueezeNetLogits();
+    console.log('logits.get(0)', logits.get(0));
+    console.log('logits.size', logits.size);
+    const logitsData = this.getNDArrayData(logits);
+    console.log('logitsData', logitsData);
+    console.log('this.current.index', this.current.index);
+    // reconstruct the logits ndarray from the serialized
+    // underlying data
+    // do this to see if we can later import weights
+    // that we export like with this method
+    this.setNDArrayData(logitsData, logits);
+
     if (this.trainClassLogitsMatrices[this.current.index] === null) {
       this.trainClassLogitsMatrices[this.current.index] = this.math.keep(
         logits.as3D(1, INPUT_SIZE, 1)
@@ -234,6 +267,7 @@ class WebcamClassifier {
       );
     }
     this.classExampleCount[this.current.index] += 1;
+    // console.log('this.trainClassLogitsMatrices', this.trainClassLogitsMatrices);
   }
 
   getNumExamples() {
@@ -365,14 +399,18 @@ class WebcamClassifier {
           }
 
           this.trainLogitsMatrix = keep(this.math.clone(newTrainLogitsMatrix));
+          // console.log('this.trainLogitsMatrix', this.trainLogitsMatrix);
         }
 
-        return this.math
+        const returnValue = this.math
           .matMul(
             this.trainLogitsMatrix.as2D(numExamples, 1000),
             frameLogits.as2D(1000, 1)
           )
           .as1D();
+        // console.log('returnValue from WebcamClassifier animate', returnValue);
+
+        return returnValue;
       });
 
       const computeConfidences = () => {

@@ -68,12 +68,6 @@
         "guard-for-in": "error",
         "handle-callback-err": "error",
         "id-blacklist": "error",
-        "id-length": [
-            "error",
-            {
-                "properties": "never"
-            }
-        ],
         "id-match": "error",
         "indent": "off",
         "indent-legacy": "off",
@@ -98,7 +92,6 @@
         "new-cap": "error",
         "new-parens": "error",
         "newline-after-var": "off",
-        "newline-before-return": "error",
         "newline-per-chained-call": "error",
         "no-alert": "error",
         "no-array-constructor": "error",
