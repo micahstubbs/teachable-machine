@@ -287,14 +287,14 @@
 .section--output {
 	position: relative
 	// margin-top: $section__offset
-	margin-top: 20px
+	margin-top: -10px
 	width: 300px
 }
 
 .output__player {
 	position: relative
 	background: $color__background
-	height: 300px
+	height: 340px
 }
 
 .output__container {
@@ -322,9 +322,15 @@
 }
 
 .output__bottom__controls {	
-	margin-top: 10px
+	margin-top: 18px
 	height: 40px
 	display: flex
+	flex-direction: column
+}
+
+.output__bottom__controls .output__selector-wrapper {
+	margin-left: 10px
+	justify-content: flex-start
 }
 
 .output__selector-wrapper {
@@ -336,7 +342,6 @@
 	display: flex
 	justify-content: space-around
 	align-items: center
-	flex-wrap: wrap
 	
 	@extend .font__size--large
 }

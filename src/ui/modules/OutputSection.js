@@ -13,131 +13,161 @@
 // limitations under the License.
 
 class OutputSection {
-    constructor(element) {
-        this.element = element;
+  constructor(element) {
+    this.element = element;
 
-        const outputs = {
-            GIFOutput: new GIFOutput(),
-            SoundOutput: new SoundOutput(),
-            SpeechOutput: new SpeechOutput()
-        };
+    const outputs = {
+      GIFOutput: new GIFOutput(),
+      SoundOutput: new SoundOutput(),
+      SpeechOutput: new SpeechOutput()
+    };
 
-        this.classNames = GLOBALS.classNames;
-        GLOBALS.predicting = true;
+    this.classNames = GLOBALS.classNames;
+    GLOBALS.predicting = true;
 
-        this.outputs = outputs;
-        this.loadedOutputs = [];
+    this.outputs = outputs;
+    this.loadedOutputs = [];
 
-        let outputLinks = element.querySelectorAll('.output_selector__option');
-        outputLinks.forEach(link => {
-            link.addEventListener('click', this.changeOutput.bind(this));
-        });
-        this.currentLink = element.querySelector(
-            '.output_selector__option--selected'
-        );
+    let outputLinks = element.querySelectorAll('.output_selector__option');
+    outputLinks.forEach(link => {
+      link.addEventListener('click', this.changeOutput.bind(this));
+    });
+    this.currentLink = element.querySelector(
+      '.output_selector__option--selected'
+    );
 
-        const downloadLinkElement = document.querySelector('#DownloadTrainingData');
-        downloadLinkElement.addEventListener('click', this.downloadOnClick.bind(this));
+    const uploadLinkElement = document.querySelector('#UploadTrainingData');
+    uploadLinkElement.addEventListener('click', this.uploadOnClick.bind(this));
 
-        this.outputContainer = document.querySelector('#output-player');
-        this.currentOutput = null;
-        this.currentLink.click();
+    const filePickerElement = document.querySelector('#file-input');
+    filePickerElement.onchange = this.filePickerOnChange.bind(this);
 
-        this.arrow = new HighlightArrow(1);
+    const downloadLinkElement = document.querySelector('#DownloadTrainingData');
+    downloadLinkElement.addEventListener(
+      'click',
+      this.downloadOnClick.bind(this)
+    );
 
-        TweenMax.set(this.arrow.element, {
-            rotation: -50,
-            scale: -0.8,
-            x: 140,
-            y: -100
-        });
-        this.element.appendChild(this.arrow.element);
+    this.outputContainer = document.querySelector('#output-player');
+    this.currentOutput = null;
+    this.currentLink.click();
+
+    this.arrow = new HighlightArrow(1);
+
+    TweenMax.set(this.arrow.element, {
+      rotation: -50,
+      scale: -0.8,
+      x: 140,
+      y: -100
+    });
+    this.element.appendChild(this.arrow.element);
+  }
+
+  uploadOnClick() {
+    document.getElementById('file-input').click();
+  }
+
+  filePickerOnChange() {
+    var files = document.getElementById('file-input').files;
+    console.log('files', files);
+    if (files.length <= 0) {
+      return false;
     }
 
-    downloadOnClick() {
-        console.log('training data', window.trainingData);
-        const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
-            JSON.stringify(window.trainingData)
-        )}`;
-        const downloadAnchorElement = document.getElementById('downloadAnchorElem');
-        downloadAnchorElement.setAttribute('href', dataStr);
-        downloadAnchorElement.setAttribute('download', 'training-data.json');
-        downloadAnchorElement.click();
+    var fr = new FileReader();
+
+    fr.onload = function(e) {
+      console.log(e);
+      var result = JSON.parse(e.target.result);
+      console.log('json uploaded', result);
+      window.importedTrainingData = result;
+    };
+
+    fr.readAsText(files.item(0));
+  }
+
+  downloadOnClick() {
+    console.log('training data', window.trainingData);
+    const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
+      JSON.stringify(window.trainingData)
+    )}`;
+    const downloadAnchorElement = document.getElementById('downloadAnchorElem');
+    downloadAnchorElement.setAttribute('href', dataStr);
+    downloadAnchorElement.setAttribute('download', 'training-data.json');
+    downloadAnchorElement.click();
+  }
+
+  enable() {
+    this.element.classList.remove('section--disabled');
+  }
+
+  highlight() {
+    this.arrow.show();
+    TweenMax.from(this.arrow.element, 0.3, { opacity: 0 });
+  }
+
+  dehighlight() {
+    TweenMax.killTweensOf(this.arrow.element);
+    this.arrow.hide();
+  }
+
+  disable() {
+    this.element.classList.add('section--disabled');
+  }
+
+  dim() {
+    this.element.classList.add('dimmed');
+  }
+
+  undim() {
+    this.element.classList.remove('dimmed');
+  }
+
+  changeOutput(event) {
+    if (this.currentLink) {
+      this.currentLink.classList.remove('output_selector__option--selected');
     }
 
-    enable() {
-        this.element.classList.remove('section--disabled');
+    this.currentLink = event.target;
+    this.currentLink.classList.add('output_selector__option--selected');
+    let outputId = this.currentLink.id;
+
+    if (this.currentOutput) {
+      this.currentOutput.stop();
+      this.currentOutput = null;
     }
 
-    highlight() {
-        this.arrow.show();
-        TweenMax.from(this.arrow.element, 0.3, { opacity: 0 });
+    if (this.outputs[outputId]) {
+      this.currentOutput = this.outputs[outputId];
     }
 
-    dehighlight() {
-        TweenMax.killTweensOf(this.arrow.element);
-        this.arrow.hide();
+    if (this.currentOutput) {
+      this.outputContainer.appendChild(this.currentOutput.element);
+      this.currentOutput.start();
     }
 
-    disable() {
-        this.element.classList.add('section--disabled');
+    gtag('event', 'select_output', { id: outputId });
+  }
+
+  startWizardMode() {
+    this.broadcastEvents = true;
+  }
+
+  stopWizardMode() {
+    this.broadcastEvents = false;
+  }
+
+  trigger(id) {
+    let index = this.classNames.indexOf(id);
+    this.currentOutput.trigger(index);
+
+    if (this.broadcastEvents) {
+      let event = new CustomEvent('class-triggered', {
+        detail: { id: id }
+      });
+      window.dispatchEvent(event);
     }
-
-    dim() {
-        this.element.classList.add('dimmed');
-    }
-
-    undim() {
-        this.element.classList.remove('dimmed');
-    }
-
-    changeOutput(event) {
-        if (this.currentLink) {
-            this.currentLink.classList.remove(
-                'output_selector__option--selected'
-            );
-        }
-
-        this.currentLink = event.target;
-        this.currentLink.classList.add('output_selector__option--selected');
-        let outputId = this.currentLink.id;
-
-        if (this.currentOutput) {
-            this.currentOutput.stop();
-            this.currentOutput = null;
-        }
-
-        if (this.outputs[outputId]) {
-            this.currentOutput = this.outputs[outputId];
-        }
-
-        if (this.currentOutput) {
-            this.outputContainer.appendChild(this.currentOutput.element);
-            this.currentOutput.start();
-        }
-
-        gtag('event', 'select_output', { id: outputId });
-    }
-
-    startWizardMode() {
-        this.broadcastEvents = true;
-    }
-
-    stopWizardMode() {
-        this.broadcastEvents = false;
-    }
-
-    trigger(id) {
-        let index = this.classNames.indexOf(id);
-        this.currentOutput.trigger(index);
-
-        if (this.broadcastEvents) {
-            let event = new CustomEvent('class-triggered', {
-                detail: { id: id }
-            });
-            window.dispatchEvent(event);
-        }
-    }
+  }
 }
 
 import TweenMax from 'gsap';
