@@ -80,7 +80,7 @@ class OutputSection {
       console.log(e);
       var result = JSON.parse(e.target.result);
       console.log('json uploaded', result);
-      window.importedTrainingData = result;
+      // window.importedTrainingData = result;
       const event = new CustomEvent('trainingdataimported', { detail: result });
       window.dispatchEvent(event);
     };
@@ -90,13 +90,19 @@ class OutputSection {
 
   downloadOnClick() {
     console.log('training data', window.trainingData);
-    const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
-      JSON.stringify(window.trainingData)
-    )}`;
+    // const dataStr = `data:text/json;charset=utf-8,${encodeURIComponent(
+    //   JSON.stringify(window.trainingData)
+    // )}`;
+    const jsonData = JSON.stringify(window.trainingData);
+    const dataBlob = new Blob([jsonData], { type: 'octect/stream' });
+    const url = window.URL.createObjectURL(dataBlob);
+
+    console.log('dataBlob', dataBlob);
     const downloadAnchorElement = document.getElementById('downloadAnchorElem');
-    downloadAnchorElement.setAttribute('href', dataStr);
+    downloadAnchorElement.setAttribute('href', url);
     downloadAnchorElement.setAttribute('download', 'training-data.json');
     downloadAnchorElement.click();
+    window.URL.revokeObjectURL(url);
   }
 
   enable() {
